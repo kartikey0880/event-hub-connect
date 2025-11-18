@@ -1,46 +1,53 @@
-import Navbar from "@/components/Navbar";
+import { useEffect, useState } from "react";
+import AuthenticatedNavbar from "@/components/AuthenticatedNavbar";
 import Hero from "@/components/Hero";
 import EventCard from "@/components/EventCard";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
-const Home = () => {
-  const featuredEvents = [
-    {
-      id: "1",
-      title: "Tech Summit 2024",
-      description: "Annual technology conference featuring industry leaders, workshops, and networking opportunities for aspiring tech professionals.",
-      date: "March 15, 2024",
-      location: "Main Auditorium",
-      category: "Technical",
-      attendees: 250,
-      image: "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=800&q=80",
-    },
-    {
-      id: "2",
-      title: "Cultural Fest 2024",
-      description: "Celebrate diversity through music, dance, art, and food from around the world in our biggest cultural celebration.",
-      date: "March 20, 2024",
-      location: "Campus Grounds",
-      category: "Cultural",
-      attendees: 500,
-      image: "https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?w=800&q=80",
-    },
-    {
-      id: "3",
-      title: "Inter-College Sports Meet",
-      description: "Compete in various sports including basketball, cricket, athletics, and more in our annual sports championship.",
-      date: "March 25, 2024",
-      location: "Sports Complex",
-      category: "Sports",
-      attendees: 300,
-      image: "https://images.unsplash.com/photo-1461896836934-ffe607ba8211?w=800&q=80",
-    },
-  ];
+interface Event {
+  id: string;
+  title: string;
+  description: string;
+  date: string;
+  location: string;
+  category: string;
+  current_attendees: number;
+  image_url: string | null;
+}
+
+const HomePage = () => {
+  const [featuredEvents, setFeaturedEvents] = useState<Event[]>([]);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    fetchFeaturedEvents();
+  }, []);
+
+  const fetchFeaturedEvents = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("events")
+        .select("*")
+        .order("date", { ascending: true })
+        .limit(3);
+
+      if (error) throw error;
+      setFeaturedEvents(data || []);
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Error loading events",
+        description: error.message,
+      });
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background">
-      <Navbar />
+      <AuthenticatedNavbar />
       <Hero />
 
       {/* Featured Events Section */}
@@ -57,7 +64,17 @@ const Home = () => {
 
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {featuredEvents.map((event) => (
-            <EventCard key={event.id} {...event} />
+            <EventCard
+              key={event.id}
+              id={event.id}
+              title={event.title}
+              description={event.description}
+              date={event.date}
+              location={event.location}
+              category={event.category}
+              attendees={event.current_attendees}
+              image={event.image_url || "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=800&q=80"}
+            />
           ))}
         </div>
       </section>
@@ -89,4 +106,4 @@ const Home = () => {
   );
 };
 
-export default Home;
+export default HomePage;

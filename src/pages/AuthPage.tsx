@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import Navbar from "@/components/Navbar";
+import AuthenticatedNavbar from "@/components/AuthenticatedNavbar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -161,7 +161,7 @@ const AuthPage = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <Navbar />
+      <AuthenticatedNavbar />
       
       <div className="container mx-auto flex min-h-[calc(100vh-4rem)] items-center justify-center px-4 py-16">
         <Card className="w-full max-w-md">
