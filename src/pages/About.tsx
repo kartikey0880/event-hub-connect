@@ -1,11 +1,11 @@
-import Navbar from "@/components/Navbar";
+import AuthenticatedNavbar from "@/components/AuthenticatedNavbar";
 import { Card, CardContent } from "@/components/ui/card";
 import { Calendar, Users, Trophy, Target } from "lucide-react";
 
 const About = () => {
   return (
     <div className="min-h-screen bg-background">
-      <Navbar />
+      <AuthenticatedNavbar />
       
       <div className="container mx-auto px-4 py-16">
         <div className="mx-auto max-w-4xl">
