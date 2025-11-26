@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import AuthenticatedNavbar from "@/components/AuthenticatedNavbar";
 import Hero from "@/components/Hero";
 import EventCard from "@/components/EventCard";
+import LoadingSpinner from "@/components/LoadingSpinner";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -36,7 +37,7 @@ const HomePage = () => {
 
       if (error) throw error;
       setFeaturedEvents(data || []);
-    } catch (error: any) {
+    } catch (error:any) {
       toast({
         variant: "destructive",
         title: "Error loading events",
@@ -85,12 +86,11 @@ const HomePage = () => {
           <h2 className="mb-8 text-center text-3xl font-bold">Event Categories</h2>
           <div className="grid gap-6 md:grid-cols-4">
             {["Technical", "Cultural", "Sports", "Workshops"].map((category) => (
-              <div
-                key={category}
-                className="rounded-lg border bg-card p-6 text-center transition-all hover:shadow-md"
-              >
-                <h3 className="text-xl font-semibold">{category}</h3>
-              </div>
+              <Link key={category} to={`/events?category=${category}`}>
+                <div className="rounded-lg border bg-card p-6 text-center transition-all hover:shadow-lg hover:scale-105 cursor-pointer">
+                  <h3 className="text-xl font-semibold">{category}</h3>
+                </div>
+              </Link>
             ))}
           </div>
         </div>
@@ -99,7 +99,7 @@ const HomePage = () => {
       {/* Footer */}
       <footer className="border-t bg-background py-8">
         <div className="container mx-auto px-4 text-center text-sm text-muted-foreground">
-          <p>&copy; 2024 CampusEvents. All rights reserved.</p>
+          <p>&copy; 2025 CampusEvents. All rights reserved.</p>
         </div>
       </footer>
     </div>

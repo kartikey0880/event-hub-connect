@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import AuthenticatedNavbar from "@/components/AuthenticatedNavbar";
+import LoadingSpinner from "@/components/LoadingSpinner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -138,9 +139,7 @@ const EditEventPage = () => {
     return (
       <div className="min-h-screen bg-background">
         <AuthenticatedNavbar />
-        <div className="container mx-auto px-4 py-8">
-          <p>Loading...</p>
-        </div>
+        <LoadingSpinner message="Loading event details..." />
       </div>
     );
   }
