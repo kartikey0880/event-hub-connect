@@ -40,14 +40,14 @@ const AuthenticatedNavbar = () => {
   }, []);
 
   const checkAdminStatus = async (userId: string) => {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("user_roles")
       .select("role")
       .eq("user_id", userId)
       .eq("role", "admin")
       .maybeSingle();
 
-    setIsAdmin(!!data);
+    setIsAdmin(!error && !!data);
   };
 
   const handleLogout = async () => {

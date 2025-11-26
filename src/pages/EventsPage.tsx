@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import AuthenticatedNavbar from "@/components/AuthenticatedNavbar";
 import EventCard from "@/components/EventCard";
+import LoadingSpinner from "@/components/LoadingSpinner";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Search } from "lucide-react";
@@ -19,6 +21,7 @@ interface Event {
 }
 
 const EventsPage = () => {
+  const [searchParams] = useSearchParams();
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [events, setEvents] = useState<Event[]>([]);
@@ -26,8 +29,12 @@ const EventsPage = () => {
   const { toast } = useToast();
 
   useEffect(() => {
+    const categoryFromUrl = searchParams.get("category");
+    if (categoryFromUrl) {
+      setCategoryFilter(categoryFromUrl);
+    }
     fetchEvents();
-  }, []);
+  }, [searchParams]);
 
   const fetchEvents = async () => {
     try {
@@ -86,16 +93,18 @@ const EventsPage = () => {
               <SelectItem value="Technical">Technical</SelectItem>
               <SelectItem value="Cultural">Cultural</SelectItem>
               <SelectItem value="Sports">Sports</SelectItem>
-              <SelectItem value="Workshop">Workshops</SelectItem>
+              <SelectItem value="Workshops">Workshops</SelectItem>
+              <SelectItem value="Technology">Technology</SelectItem>
+              <SelectItem value="Culture">Culture</SelectItem>
+              <SelectItem value="Academic">Academic</SelectItem>
+              <SelectItem value="Social">Social</SelectItem>
             </SelectContent>
           </Select>
         </div>
 
         {/* Events Grid */}
         {loading ? (
-          <div className="py-16 text-center">
-            <p className="text-muted-foreground">Loading events...</p>
-          </div>
+          <LoadingSpinner message="Loading events..." />
         ) : (
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {filteredEvents.map((event) => (

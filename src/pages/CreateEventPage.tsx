@@ -16,6 +16,7 @@ const CreateEventPage = () => {
   const [uploading, setUploading] = useState(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [category, setCategory] = useState<string>("");
 
   useEffect(() => {
     checkAuth();
@@ -71,6 +72,15 @@ const CreateEventPage = () => {
     e.preventDefault();
     if (!userId) return;
 
+    if (!category) {
+      toast({
+        title: "Error",
+        description: "Please select a category.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setLoading(true);
     const formData = new FormData(e.currentTarget);
 
@@ -93,7 +103,7 @@ const CreateEventPage = () => {
       time: formData.get("time") as string,
       location: formData.get("location") as string,
       organizer: formData.get("organizer") as string,
-      category: formData.get("category") as string,
+      category: category,
       max_capacity: parseInt(formData.get("max_capacity") as string),
       image_url: imageUrl,
       created_by: userId,
@@ -161,7 +171,7 @@ const CreateEventPage = () => {
 
           <div>
             <Label htmlFor="category">Category</Label>
-            <Select name="category" required>
+            <Select value={category} onValueChange={setCategory} required>
               <SelectTrigger>
                 <SelectValue placeholder="Select a category" />
               </SelectTrigger>
