@@ -13,6 +13,9 @@ const CreateEventPage = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
 
   useEffect(() => {
     checkAuth();
@@ -27,12 +30,60 @@ const CreateEventPage = () => {
     setUserId(user.id);
   };
 
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setImageFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const uploadImage = async (file: File): Promise<string | null> => {
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${Math.random()}.${fileExt}`;
+    const filePath = `${fileName}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('event-images')
+      .upload(filePath, file);
+
+    if (uploadError) {
+      toast({
+        title: "Error",
+        description: "Failed to upload image.",
+        variant: "destructive",
+      });
+      return null;
+    }
+
+    const { data: { publicUrl } } = supabase.storage
+      .from('event-images')
+      .getPublicUrl(filePath);
+
+    return publicUrl;
+  };
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!userId) return;
 
     setLoading(true);
     const formData = new FormData(e.currentTarget);
+
+    let imageUrl = null;
+    if (imageFile) {
+      setUploading(true);
+      imageUrl = await uploadImage(imageFile);
+      setUploading(false);
+      if (!imageUrl) {
+        setLoading(false);
+        return;
+      }
+    }
 
     const { error } = await supabase.from("events").insert({
       title: formData.get("title") as string,
@@ -44,7 +95,7 @@ const CreateEventPage = () => {
       organizer: formData.get("organizer") as string,
       category: formData.get("category") as string,
       max_capacity: parseInt(formData.get("max_capacity") as string),
-      image_url: formData.get("image_url") as string,
+      image_url: imageUrl,
       created_by: userId,
     });
 
@@ -130,13 +181,28 @@ const CreateEventPage = () => {
           </div>
 
           <div>
-            <Label htmlFor="image_url">Image URL</Label>
-            <Input id="image_url" name="image_url" type="url" placeholder="https://..." />
+            <Label htmlFor="image">Event Image</Label>
+            <Input 
+              id="image" 
+              name="image" 
+              type="file" 
+              accept="image/*"
+              onChange={handleImageChange}
+            />
+            {imagePreview && (
+              <div className="mt-4">
+                <img 
+                  src={imagePreview} 
+                  alt="Preview" 
+                  className="max-w-full h-48 object-cover rounded-lg"
+                />
+              </div>
+            )}
           </div>
 
           <div className="flex gap-4">
-            <Button type="submit" disabled={loading}>
-              {loading ? "Creating..." : "Create Event"}
+            <Button type="submit" disabled={loading || uploading}>
+              {uploading ? "Uploading..." : loading ? "Creating..." : "Create Event"}
             </Button>
             <Button type="button" variant="outline" onClick={() => navigate("/events")}>
               Cancel

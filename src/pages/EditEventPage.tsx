@@ -15,6 +15,9 @@ const EditEventPage = () => {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [event, setEvent] = useState<any>(null);
+  const [uploading, setUploading] = useState(false);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
 
   useEffect(() => {
     checkAuth();
@@ -39,13 +42,63 @@ const EditEventPage = () => {
     }
 
     setEvent(data);
+    setImagePreview(data.image_url);
     setLoading(false);
+  };
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setImageFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const uploadImage = async (file: File): Promise<string | null> => {
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${Math.random()}.${fileExt}`;
+    const filePath = `${fileName}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('event-images')
+      .upload(filePath, file);
+
+    if (uploadError) {
+      toast({
+        title: "Error",
+        description: "Failed to upload image.",
+        variant: "destructive",
+      });
+      return null;
+    }
+
+    const { data: { publicUrl } } = supabase.storage
+      .from('event-images')
+      .getPublicUrl(filePath);
+
+    return publicUrl;
   };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setSubmitting(true);
     const formData = new FormData(e.currentTarget);
+
+    let imageUrl = event?.image_url;
+    if (imageFile) {
+      setUploading(true);
+      const newImageUrl = await uploadImage(imageFile);
+      setUploading(false);
+      if (!newImageUrl) {
+        setSubmitting(false);
+        return;
+      }
+      imageUrl = newImageUrl;
+    }
 
     const { error } = await supabase
       .from("events")
@@ -59,7 +112,7 @@ const EditEventPage = () => {
         organizer: formData.get("organizer") as string,
         category: formData.get("category") as string,
         max_capacity: parseInt(formData.get("max_capacity") as string),
-        image_url: formData.get("image_url") as string,
+        image_url: imageUrl,
       })
       .eq("id", id);
 
@@ -156,13 +209,31 @@ const EditEventPage = () => {
           </div>
 
           <div>
-            <Label htmlFor="image_url">Image URL</Label>
-            <Input id="image_url" name="image_url" type="url" defaultValue={event?.image_url} />
+            <Label htmlFor="image">Event Image</Label>
+            <Input 
+              id="image" 
+              name="image" 
+              type="file" 
+              accept="image/*"
+              onChange={handleImageChange}
+            />
+            {imagePreview && (
+              <div className="mt-4">
+                <img 
+                  src={imagePreview} 
+                  alt="Preview" 
+                  className="max-w-full h-48 object-cover rounded-lg"
+                />
+              </div>
+            )}
+            <p className="text-sm text-muted-foreground mt-2">
+              Upload a new image to replace the current one
+            </p>
           </div>
 
           <div className="flex gap-4">
-            <Button type="submit" disabled={submitting}>
-              {submitting ? "Updating..." : "Update Event"}
+            <Button type="submit" disabled={submitting || uploading}>
+              {uploading ? "Uploading..." : submitting ? "Updating..." : "Update Event"}
             </Button>
             <Button type="button" variant="outline" onClick={() => navigate(`/events/${id}`)}>
               Cancel
