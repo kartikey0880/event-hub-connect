@@ -2,10 +2,11 @@ import { useEffect, useState } from "react";
 import AuthenticatedNavbar from "@/components/AuthenticatedNavbar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, MapPin, Users, Clock } from "lucide-react";
+import { Calendar, MapPin, Users, Clock, Share2, Edit, Trash2 } from "lucide-react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 
 interface Event {
   id: string;
@@ -20,6 +21,7 @@ interface Event {
   max_capacity: number;
   organizer: string;
   image_url: string | null;
+  created_by: string;
 }
 
 const EventDetailPage = () => {
@@ -31,6 +33,7 @@ const EventDetailPage = () => {
   const [isRegistered, setIsRegistered] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [registering, setRegistering] = useState(false);
+  const [isCreator, setIsCreator] = useState(false);
 
   useEffect(() => {
     checkAuth();
@@ -72,6 +75,10 @@ const EventDetailPage = () => {
 
       if (error) throw error;
       setEvent(data);
+      
+      if (user && data.created_by === user.id) {
+        setIsCreator(true);
+      }
     } catch (error: any) {
       toast({
         variant: "destructive",
@@ -169,6 +176,37 @@ const EventDetailPage = () => {
     }
   };
 
+  const handleShare = () => {
+    const url = window.location.href;
+    navigator.clipboard.writeText(url);
+    toast({
+      title: "Link Copied!",
+      description: "Event link copied to clipboard.",
+    });
+  };
+
+  const handleDelete = async () => {
+    if (!event) return;
+
+    try {
+      const { error } = await supabase.from("events").delete().eq("id", event.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Event deleted successfully!",
+      });
+      navigate("/events");
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to delete event.",
+      });
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background">
@@ -256,32 +294,63 @@ const EventDetailPage = () => {
           </div>
 
           <div className="sticky bottom-0 border-t bg-background py-4">
-            {user ? (
-              isRegistered ? (
-                <Button 
-                  size="lg" 
-                  variant="destructive" 
-                  className="w-full md:w-auto"
-                  onClick={handleUnregister}
-                  disabled={registering}
-                >
-                  {registering ? "Canceling..." : "Cancel Registration"}
-                </Button>
+            <div className="flex flex-wrap gap-3">
+              {isCreator ? (
+                <>
+                  <Button size="lg" variant="outline" onClick={() => navigate(`/events/${id}/edit`)}>
+                    <Edit className="mr-2 h-4 w-4" />
+                    Edit Event
+                  </Button>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button size="lg" variant="destructive">
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        Delete Event
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Delete Event</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Are you sure you want to delete this event? This action cannot be undone.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleDelete}>Delete</AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </>
+              ) : user ? (
+                isRegistered ? (
+                  <Button 
+                    size="lg" 
+                    variant="destructive" 
+                    onClick={handleUnregister}
+                    disabled={registering}
+                  >
+                    {registering ? "Canceling..." : "Cancel Registration"}
+                  </Button>
+                ) : (
+                  <Button 
+                    size="lg" 
+                    onClick={handleRegister}
+                    disabled={registering || event.current_attendees >= event.max_capacity}
+                  >
+                    {registering ? "Registering..." : event.current_attendees >= event.max_capacity ? "Event Full" : "Register for Event"}
+                  </Button>
+                )
               ) : (
-                <Button 
-                  size="lg" 
-                  className="w-full md:w-auto"
-                  onClick={handleRegister}
-                  disabled={registering || event.current_attendees >= event.max_capacity}
-                >
-                  {registering ? "Registering..." : event.current_attendees >= event.max_capacity ? "Event Full" : "Register for Event"}
+                <Button size="lg" onClick={() => navigate("/auth")}>
+                  Sign In to Register
                 </Button>
-              )
-            ) : (
-              <Button size="lg" className="w-full md:w-auto" onClick={() => navigate("/auth")}>
-                Sign In to Register
+              )}
+              <Button size="lg" variant="outline" onClick={handleShare}>
+                <Share2 className="mr-2 h-4 w-4" />
+                Share
               </Button>
-            )}
+            </div>
           </div>
         </div>
       </div>
